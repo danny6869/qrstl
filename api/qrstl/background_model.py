@@ -1,5 +1,5 @@
 import os
-import settings
+import api.settings as settings
 
 import logging
 log = logging.getLogger(__name__)
