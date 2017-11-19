@@ -29,10 +29,13 @@ def _output_exception_response(http_response_code,error):
 def handle_not_found_exception(error):
     return _output_exception_response(404,error)
 
+@app.errorhandler(InputValidationException)
+def handle_bad_request_exception(error):
+    return _output_exception_response(400,error)
+
 @app.errorhandler(Exception)
 def handle_bad_request_exception(error):
-    # XXX - 400?  Probably need more granularity
-    return _output_exception_response(400,error)
+    return _output_exception_response(500,error)
 
 @app.route("/")
 @app.route("/api")
