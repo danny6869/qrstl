@@ -38,8 +38,11 @@ def handle_bad_request_exception(error):
     return _output_exception_response(500,error)
 
 @app.route("/")
-@app.route("/api")
 def main():
+    return "<img src='https://pbs.twimg.com/media/DEjoivzXoAEoZXQ.jpg'></img>"
+
+@app.route("/api")
+def main_api():
     return jsonify( uri = [
         '/api/assets',
         '/api/qr',
