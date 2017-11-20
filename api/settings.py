@@ -1,11 +1,13 @@
 import os
 
 BACKGROUND_FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'background_models')
+SAMPLE_FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'samples')
 
 BACKGROUND_FILE_ATTRIBUTES = {
     # NOTE: All units below are in mm unless otherwise noted
     '_DEFAULT': {
         'description': '(none)',
+        'tags': [],
         # QR drawing area bounding cube
         'qr_size_x': 0,
         'qr_size_y': 0,
@@ -22,8 +24,20 @@ BACKGROUND_FILE_ATTRIBUTES = {
         # Height at which the instructions should show to change filament
         'change_filament_height': 0,
     },
+    '3cm_keychain': {
+        'description': '3cm keychain',
+        'tags': ['keychain'],
+        'qr_size_x': 24,
+        'qr_size_y': 24,
+        'qr_size_z': 2,
+        'no_draw_position': 'bottomright',
+        'no_draw_x': 3,
+        'no_draw_y': 3,
+        'change_filament_height': 1.6,
+    },
     '5cm_coaster_no_nfc': {
         'description': '5cm QR coaster (no NFC)',
+        'tags': ['coaster'],
         'qr_size_x': 40,
         'qr_size_y': 40,
         'qr_size_z': 5,
@@ -31,6 +45,7 @@ BACKGROUND_FILE_ATTRIBUTES = {
     },
     '5cm_coaster_nfc': {
         'description': '5cm QR coaster (with NFC)',
+        'tags': ['coaster'],
         'qr_size_x': 40,
         'qr_size_y': 40,
         'qr_size_z': 5,
@@ -41,6 +56,7 @@ BACKGROUND_FILE_ATTRIBUTES = {
     },
     '5cm_coaster_nfc_no_logo': {
         'description': '5cm QR coaster (with NFC - no logo)',
+        'tags': ['coaster'],
         'qr_size_x': 40,
         'qr_size_y': 40,
         'qr_size_z': 5,
