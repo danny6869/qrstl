@@ -57,6 +57,8 @@ def assets():
         model_list.append({
                 'name': model_obj.name,
                 'description': model_obj.description,
+                'tags': model_obj.tags,
+                'change_filament_height': model_obj.change_filament_height,
                 'create_uri': '/api/qr?name={}&data='.format(urllib.parse.quote_plus(model_obj.name)),
                 'sample_stl_uri': '/api/sample/qr?name={}&data={}'.format(urllib.parse.quote_plus(model_obj.name),urllib.parse.quote_plus('http://qrstl.com')),
                 'sample_image_uri': '/api/sample/image?name={}'.format(urllib.parse.quote_plus(model_obj.name)),
