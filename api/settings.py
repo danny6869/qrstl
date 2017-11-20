@@ -24,7 +24,7 @@ BACKGROUND_FILE_ATTRIBUTES = {
         # Height at which the instructions should show to change filament
         'change_filament_height': 0,
     },
-    '3cm_keychain': {
+    '30mm_keychain': {
         'description': '3cm keychain',
         'tags': ['keychain'],
         'qr_size_x': 24,
@@ -35,6 +35,18 @@ BACKGROUND_FILE_ATTRIBUTES = {
         'no_draw_y': 3,
         'change_filament_height': 1.6,
     },
+    '35mm_keychain_with_nfc': {
+        'description': '3.5cm keychain (nfc snap-together)',
+        'tags': ['keychain','nfc'],
+        'qr_size_x': 29,
+        'qr_size_y': 29,
+        'qr_size_z': 1.75,
+        'no_draw_position': 'bottomright',
+        'no_draw_x': 4,
+        'no_draw_y': 4,
+        'change_filament_height': 2.6,
+    },
+    # XXX - Not really finalized from here down
     '5cm_coaster_no_nfc': {
         'description': '5cm QR coaster (no NFC)',
         'tags': ['coaster'],
