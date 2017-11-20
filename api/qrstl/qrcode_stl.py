@@ -6,6 +6,7 @@ import qrcode
 import qrcode.image.base
 from stl.mesh import Mesh
 from stl.stl import Mode
+import api.settings as settings
 
 from api.qrstl.background_model import BackgroundModel
 
@@ -179,16 +180,14 @@ if __name__ == '__main__':
     # Main execution...
     qr_data = 'http://www.qrstl.com'
 
-    SAMPLE_OUTPUT_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets', 'samples')
-
-    print("Generating samples for all known models to \"{}\"...".format(SAMPLE_OUTPUT_DIRECTORY))
+    print("Generating samples for all known models to \"{}\"...".format(settings.SAMPLE_FILE_DIRECTORY))
 
     try:
-        os.makedirs(SAMPLE_OUTPUT_DIRECTORY)
+        os.makedirs(settings.SAMPLE_FILE_DIRECTORY)
     except FileExistsError as ex:
         pass
 
     for x in BackgroundModel.all():
         print("Generating sample QR for \"{}\"...".format(x.name))
         qr_stl = QRCodeSTL.make_stl(x.name, qr_data)
-        qr_stl.save('{}\\{}.stl'.format(SAMPLE_OUTPUT_DIRECTORY,x.name))
+        qr_stl.save('{}\\{}.stl'.format(settings.SAMPLE_FILE_DIRECTORY,x.name))
