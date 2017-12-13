@@ -42,7 +42,23 @@ BACKGROUND_FILE_ATTRIBUTES = {
         'change_filament_height': 1.6,
         'notes': [
         ],
-
+    },
+    '40mm_keychain_with_nfc': {
+        'display_name': '4cm keychain with embedded nfc',
+        'description': 'A basic 3cm x 3cm keychain with an embedded nfc tag.',
+        'tags': ['keychain','nfc'],
+        'qr_size_x': 32,
+        'qr_size_y': 32,
+        'qr_size_z': 0.7,
+        'offset_z': 2.8,
+        'no_draw_position': 'bottomright',
+        'no_draw_x': 4,
+        'no_draw_y': 4,
+        'change_filament_height': 3.1,
+        'notes': [
+            'This model is designed to accept a 3cm diameter (1mm thick) nfc tag.'
+            'Set your slicer to stop at the height of 1.82mm so you can insert the nfc tag.'
+        ],
     },
     # TODO: From here down have not quite been vetted yet... still working on them.  Move above as they become "official".
     # '35mm_keychain_with_nfc': {
