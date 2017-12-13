@@ -3,6 +3,7 @@
 import io
 from api.qrstl.background_model import BackgroundModel
 from api.qrstl.qrcode_stl import QRCodeSTL
+import api.settings as settings
 import tempfile
 import os
 import uuid
@@ -41,6 +42,16 @@ def handle_bad_request_exception(error):
 def main():
     return "<img src='https://pbs.twimg.com/media/DEjoivzXoAEoZXQ.jpg'></img>"
 
+@app.route("/test")
+def main_test():
+    # XXX - Until I get some things more finalized...I don't care if people see this while I am working on it.
+    return send_file(
+        '../../site/index.html'
+        # attachment_filename=qr_stl.background_model.filename,
+        # as_attachment=True,
+        # mimetype='application/octet-stream',
+    )
+
 @app.route("/api")
 def main_api():
     return jsonify( uri = [
@@ -53,24 +64,60 @@ def main_api():
 @app.route("/api/assets")
 def assets():
     model_list = []
+    tag_list = []
+
     for model_obj in BackgroundModel.all():
-        model_list.append({
-                'name': model_obj.name,
-                'description': model_obj.description,
-                'tags': model_obj.tags,
-                'change_filament_height': model_obj.change_filament_height,
-                'create_uri': '/api/qr?name={}&data='.format(urllib.parse.quote_plus(model_obj.name)),
-                'sample_stl_uri': '/api/sample/qr?name={}&data={}'.format(urllib.parse.quote_plus(model_obj.name),urllib.parse.quote_plus('http://qrstl.com')),
-                'sample_image_uri': '/api/sample/image?name={}'.format(urllib.parse.quote_plus(model_obj.name)),
-# XXX - Maybe something like this too!?
-#                'attributes': {
-#                    'dimensions': [40,40,5],
-#                    'tags': ['magnet','logo','nfc']
-#                },
-        })
-    return jsonify( model_list = model_list, )
+        model_info = {
+            'name': model_obj.name,
+            'display_name': model_obj.display_name,
+            'description': model_obj.description,
+            'tags': model_obj.tags,
+            'notes': model_obj.notes,
+            'change_filament_height': model_obj.change_filament_height,
+            'create_uri': '/api/qr?name={}&data='.format(urllib.parse.quote_plus(model_obj.name)),
+            'sample_stl_uri': '/api/sample/qr?name={}&data={}'.format(urllib.parse.quote_plus(model_obj.name),urllib.parse.quote_plus('http://qrstl.com')),
+            'sample_image_uri': '/api/sample/image?name={}'.format(urllib.parse.quote_plus(model_obj.name)),
+        }
+
+        # Add some notes automatically if needed...
+        if model_obj.change_filament_height:
+            model_info['notes'] = model_info['notes'] + [
+                "For dual-color support, set your slicing software to stop for a filament change at the height of {}mm".format(model_obj.change_filament_height)
+            ]
+
+        # Add this model to our list...
+        model_list.append(model_info)
+
+        # Keep a list of all possible tags to communicate out...
+        tag_list = tag_list + model_obj.tags
+
+    tag_list = list(set(tag_list))
+    return jsonify( model_list = model_list, tag_list = tag_list )
+
+@app.route("/api/sample/image")
+def sample_image():
+
+    # Input...
+    background_model_name = request.args.get("name")
+
+    # Complain about missing or bad input...
+    if background_model_name is None or background_model_name == '':
+        raise InputValidationException(
+            "Missing background template \"name\" parameter value.  See assets for possible values.")
+
+    # Serve up our sample image file from the dir we keep them in...
+    tf = os.path.join(settings.SAMPLE_PNG_FILE_DIRECTORY, "{}.png".format(background_model_name))
+
+    if not os.path.isfile(tf):
+        tf = os.path.join(settings.SAMPLE_PNG_FILE_DIRECTORY, "_blank.png")
+
+    return send_file(
+        tf,
+    )
+
 
 @app.route("/api/qr")
+@app.route("/api/sample/qr")
 def generate_qr():
 
     # Input...
@@ -78,14 +125,14 @@ def generate_qr():
     qr_data = request.args.get("data")
 
     # Complain about missing or bad input...
+    if background_model_name is None or background_model_name == '':
+        raise InputValidationException("Missing background template \"name\" parameter value.  See assets for possible values.")
+
     if qr_data is None or qr_data == '':
         raise InputValidationException("Missing QR code \"data\" parameter value.  Refusing to create a blank QR code.")
     elif qr_data not in []:
         # TODO: Proper check for valid-ish QR code needed
         pass
-
-    if background_model_name is None or background_model_name == '':
-        raise InputValidationException("Missing background template \"name\" parameter value.  See assets for possible values.")
 
     qr_stl = QRCodeSTL.make_stl(background_model_name, qr_data)
 
