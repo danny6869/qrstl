@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Bootstrap CSS CDN -->
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
+
+<script type="text/babel">
+
+class QRInputBase extends React.Component {
+
+  static defaultProps = {
+    default_values: {},
+  }
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      // We are going to put our input item values in here for convenience...
+      // Every input MUST have "name" set...
+      // Use the defaults as our starting point to make sure everything is in sync...
+      form_items: props.default_values,
+      // Force the qr_data to get set incase this is due to a QR type switch...
+      qr_data: this.compileQRData(props.default_values),
+    }
+  }
+
+  inputChanged(event) {
+    // This method should gather all info from it's mini form and then call this.updateQRData() with that info.
+    // Needs to be overridden in the child classes
+    if ( ( event.target.name != null ) && ( event.target.name != '' ) ) {
+        var form_items = this.state.form_items;
+        form_items[event.target.name] = event.target.value;
+        this.setState({ form_items: form_items });
+        var qr_data = this.compileQRData(form_items);
+        this.updateQRData(qr_data);
+    } else {
+        console.log("WARNING: Missing name attribute on input component.")
+    }
+  }
+
+  compileQRData(form_items) {
+      // Must be overridden in child class...returns the compiled QR CODE DATA string from our form items...
+      return 'compileQRData() must be overridden in child class';
+  }
+
+  updateQRData(qr_data) {
+    this.setState({ qr_data: qr_data })
+  }
+
+  renderHiddenQRDataField() {
+    // This MUST be included in the output of our child components.  It is where the final QR data goes to be sent on with the form's submit.
+    return (
+      <div>
+        <input type="hidden" ref="data" name="data" value={this.state.qr_data} />
+      </div>
+    );
+  }
+};
+
+class QRInputURL extends QRInputBase {
+  compileQRData(form_items) {
+    return form_items['url'];
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <input type="text" ref="url" name="url" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['url']} size="60"/>
+      </div>
+    );
+  }
+};
+class QRInputText extends QRInputBase {
+  compileQRData(form_items) {
+    return form_items['text'];
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <textarea ref="text" name="text" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['text']} cols="80" rows="7"/>
+      </div>
+    );
+  }
+};
+class QRInputWIFI extends QRInputBase {
+
+  compileQRData(form_items) {
+    var qr_data = "WIFI:"+form_items['wifi_name']+";T:"+form_items['wifi_encryption_type']+";S:"+form_items['wifi_ssid']+";P:"+form_items['wifi_password']+";";
+    return qr_data;
+  }
+
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <div className="row">
+          <div className="col-sm-3">
+            Network Name:
+          </div>
+          <div className="col-sm-9">
+            <input type="text" name="wifi_name" ref="wifi_name" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['wifi_name']} />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-sm-3">
+            SSID:
+          </div>
+          <div className="col-sm-9">
+            <input type="text" name="wifi_ssid" ref="wifi_ssid" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['wifi_ssid']} />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-sm-3">
+            Password:
+          </div>
+          <div className="col-sm-9">
+            <input type="text" name="wifi_password" ref="wifi_password" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['wifi_password']} />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-sm-3">
+            Encryption Type:
+          </div>
+          <div className="col-sm-9">
+            <select name="wifi_encryption_type" ref="wifi_encryption_type" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['wifi_encryption_type']}>
+              <option value="" checked={ this.props.default_values['wifi_encryption_type'] == '' ? true : false }>(none)</option>
+              <option value="WEP" checked={ this.props.default_values['wifi_encryption_type'] == 'WEP' ? true : false }>WEP</option>
+              <option value="WPA" checked={ this.props.default_values['wifi_encryption_type'] == 'WPA' ? true : false }>WPA</option>
+              <option value="WPA2" checked={ this.props.default_values['wifi_encryption_type'] == 'WPA2' ? true : false }>WPA2</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+};
+
+class QRCreator extends React.Component {
+
+  static defaultProps = {
+    qr_types: {
+      text: {
+        display_name: 'Text',
+        object_class: QRInputText,
+        default_values: {
+          "text": "(text)"
+        },
+      },
+      url: {
+        display_name: 'URL',
+        object_class: QRInputURL,
+        default_values: {
+          "url": "http://qrstl.com"
+        },
+      },
+      wifi: {
+        display_name: 'WiFi',
+        object_class: QRInputWIFI,
+        default_values: {
+          "wifi_name": "My WiFi",
+          "wifi_ssid": "My Network SSID",
+          "wifi_password": "(password)",
+          "wifi_encryption_type": "WPA2"
+        },
+      },
+    }
+  }
+
+  constructor(props) {
+    super(props);
+
+    // See: http://qrcode-coding.wikia.com/wiki/Wiki_for_Coding_QR_Code_Mobile_Apps
+
+    this.state = {
+      current_selection: 'wifi',
+    }
+  }
+
+  selectQRType(qr_type) {
+    this.setState({ current_selection: qr_type })
+  }
+
+  render() {
+    var qr_type_keys = Object.keys(this.props.qr_types);
+
+    // Dynamically create the qr input that is selected...
+    var object_class = this.props.qr_types[this.state.current_selection]['object_class'];
+    var object_default_values = this.props.qr_types[this.state.current_selection]['default_values'];
+    var input_object_instance = React.createElement(object_class, {
+      default_values: object_default_values,
+    });
+
+    return (
+      <div className="qr_creator">
+        <ul className="nav nav-pills nav-fill">
+          {
+            qr_type_keys.map( function (qr_type) {
+              return(
+                <li className={ this.state.current_selection == qr_type ? 'active' : null }>
+                <a href="#" onClick={this.selectQRType.bind(this,qr_type)}>{ this.props.qr_types[qr_type]['display_name'] }</a>
+                </li>
+              );
+            }.bind(this) )
+          }
+        </ul>
+        <div className="row">&nbsp;</div>
+        <div>
+          { input_object_instance }
+        </div>
+      </div>
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+class TagItem extends React.Component {
+  render() {
+    if ( this.props.onToggle ) {
+      // Render a selectable item
+      return (
+        <label key={"tag_selector_" + this.props.tag_name}>
+          <a href="#" className={ this.props.highlight ? "label label-primary" : "label label-default" } onClick={this.props.onToggle.bind(this,this.props.tag_name)}>{ this.props.tag_name }</a>
+          &nbsp;
+        </label>
+      );
+    } else {
+      // Render a static display item...
+      return (
+        <label>
+          <div className={ this.props.highlight ? "label label-primary" : "label label-default" }>{ this.props.tag_name }</div>
+          &nbsp;
+        </label>
+
+      );
+    }
+  }
+}
+
+
+
+
+class QRSTLItem extends React.Component {
+
+  render() {
+    var item = this.props.item
+
+    return (
+      <div className={ "qr_stl_model_" + item.name }>
+
+        <div className="container">
+          <div className="row">
+            <div className="col-sm-12">
+                <label>
+                  { this.props.checked ?
+                    <input type="hidden" name="name" value={item.name} />
+                  : null
+                  }
+                  {item.description}
+                </label>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-sm-2">
+              {
+                ( item.sample_stl_uri ) ? (
+                  <a href={item.sample_stl_uri}><img src={item.sample_image_uri} alt="(image)" className="img-rounded" /></a>
+                ) : (
+                  <img src={item.sample_image_uri} alt="(image)" className="img-rounded" />
+                )
+              }
+            </div>
+            <div className="col-sm-10">
+              <div className="row">
+                <div className="col-sm-12">
+                  (description)
+                </div>
+              </div>
+              <div className="row">
+                <div className="col-sm-12">
+                  {
+                    ( item.notes.length > 0 ) ? (
+                      <ul>
+                        {
+                          item.notes.map( function (note) {
+                            return(
+                              <li>{ note }</li>
+                            )
+                          }.bind(this) )
+                        }
+                      </ul>
+                    ) : (
+                      null
+                    )
+                  }
+                  For dual color, change the filament at {item.change_filament_height}mm
+                </div>
+              </div>
+              <div className="row">
+                <div className="col-sm-12">
+                  {item.tags.map( function (tag_name) {
+                    return(
+                      <TagItem key={item.name + "_" + tag_name} tag_name={tag_name} highlight={true} />
+                    )
+                  }.bind(this).bind(item) )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+class TagSelector extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    var filterRes = this.getFilteredModelList(['nfc'],'and')
+
+    this.state = {
+        wanted_tag_list_operator: filterRes.wanted_tag_list_operator,
+        wanted_tag_list: filterRes.wanted_tag_list,
+        filtered_model_list: filterRes.filtered_model_list,
+        select_mode: false,
+        selected_item: filterRes.filtered_model_list ? filterRes.filtered_model_list[0] : null,
+    };
+  }
+
+  handleOperatorChange(event) {
+    this.tagListStateChange(this.state.wanted_tag_list,event.target.value)
+  }
+
+  handleWantedTagToggle(tag_name) {
+    var wanted_tag_list = this.state.wanted_tag_list;
+
+    var foundIndex = wanted_tag_list.indexOf(tag_name);
+
+    if ( foundIndex == -1 ) {
+        wanted_tag_list.push(tag_name);
+    } else if ( foundIndex != -1 ) {
+      wanted_tag_list.splice(foundIndex, 1);
+    }
+
+    this.tagListStateChange(wanted_tag_list.sort(),this.state.wanted_tag_list_operator)
+  }
+
+  getFilteredModelList(wanted_tag_list,wanted_tag_list_operator) {
+
+    var filtered_model_list = [];
+    var i=0;
+    for (i=0;i<this.props.available_model_list.length;i++) {
+        var item = this.props.available_model_list[i];
+        if ( wanted_tag_list.length == 0 ) {
+            filtered_model_list.push( item );
+        } else if ( wanted_tag_list_operator == 'and' ) {
+          var x =0;
+          var shouldAdd = true;
+          for (x=0;x<wanted_tag_list.length;x++) {
+              if ( item.tags.indexOf(wanted_tag_list[x]) == -1 ) {
+                  shouldAdd = false
+                  break;
+              }
+          }
+          if ( shouldAdd ) {
+              filtered_model_list.push( item );
+          }
+        } else {
+          var x =0;
+          for (x=0;x<wanted_tag_list.length;x++) {
+              if ( item.tags.indexOf(wanted_tag_list[x]) != -1 ) {
+                  filtered_model_list.push( item );
+                  break;
+              }
+          }
+        }
+    }
+
+    return {
+        filtered_model_list: filtered_model_list,
+        wanted_tag_list: wanted_tag_list.sort(),
+        wanted_tag_list_operator: wanted_tag_list_operator,
+    }
+
+  };
+
+  tagListStateChange(wanted_tag_list,wanted_tag_list_operator) {
+    var filterRes = this.getFilteredModelList(wanted_tag_list,wanted_tag_list_operator)
+    this.setState({ filtered_model_list: filterRes.filtered_model_list });
+    this.setState({ wanted_tag_list: filterRes.wanted_tag_list });
+    this.setState({ wanted_tag_list_operator: filterRes.wanted_tag_list_operator });
+  };
+
+  setSelectMode(event) {
+      this.setState({ select_mode: event.target.checked })
+  }
+
+  enableSelectMode(event) {
+      this.setState({ select_mode: true })
+  }
+
+  render() {
+
+    return (
+      <div className="tag_selector">
+        {
+            this.state.select_mode ? (
+                this.renderSelectMode()
+            ) : (
+                this.renderSelectedItem()
+            )
+        }
+      </div>
+    );
+  }
+
+  setModelSelection(item_name) {
+    /*
+        New model selected, so set it in the state, and turn off selection mode
+    */
+
+      for (var i=0;i<this.state.filtered_model_list.length;i++) {
+        var item = this.state.filtered_model_list[i];
+        if ( item.name == item_name ) {
+            this.setState({ selected_item: item })
+            break;
+        }
+      }
+      this.setState({ select_mode: false });
+  }
+
+  modelSelectionChanged(item_name) {
+      this.setModelSelection(item_name)
+  }
+
+  renderSelectMode() {
+    var tag_pos = 0;
+
+    return (
+      <div className="tagSelectorFull">
+
+        <div className="container">
+          <div className="row">
+            <div className="col-sm-1">
+              Filter:
+            </div>
+            <div className="col-sm-9">
+              <select key="wanted-tag-operator-dropdown" onChange={this.handleOperatorChange.bind(this)} defaultValue={this.state.wanted_tag_list_operator}>
+                <option value="and">Match all</option>
+                <option value="or">Match any</option>
+              </select>
+              <div className="row">
+                <div className="col-sm-12">
+                { this.props.tag_list.map(
+                  function(listvalue) {
+                    tag_pos = tag_pos + 1;
+                    return (
+                      <TagItem key={"tag_select_" + listvalue} tag_name={listvalue} highlight={ ( this.state.wanted_tag_list.indexOf(listvalue) != -1 ) ? true : false } onToggle={this.handleWantedTagToggle.bind(this)} />
+                    )
+                  }.bind(this)
+                ) }
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="row">&nbsp;</div>
+        </div>
+
+        <div className="container">
+          <div className="row">
+            <div className="col-sm-10">
+            <div className="list-group">
+            { this.state.filtered_model_list.map(
+             function(listvalue) {
+               return (
+                 <a href="#" className={ (this.state.selected_item.name == listvalue.name) ? "list-group-item list-group-item-action active" : "list-group-item list-group-item-action" } onClick={this.modelSelectionChanged.bind(this, listvalue.name)} key={listvalue.name} >
+                   <div key={"model_card_" + listvalue.name}>
+                   <QRSTLItem item={listvalue} checked={ (this.state.selected_item.name == listvalue.name) ? true : false }/>
+                   </div>
+                 </a>
+               );
+             }.bind(this)
+            ) }
+            </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-sm-12">
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+  }
+
+  renderSelectedItem() {
+    return (
+      <div className="tagSelectorSelected">
+        <div className="container">
+          <div className="row">
+            <div className="col-sm-10">
+              <QRSTLItem item={this.state.selected_item} checked={true} />
+            </div>
+            <div className="col-sm-2">
+                <a href="#" onClick={this.enableSelectMode.bind(this)}>(change selection)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+}
+
+class QRSTLGeneratorApp extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+        application_status: 'initializing',
+        assets: {},
+    };
+  }
+
+  componentDidMount() {
+
+    fetch(`/api/assets`)
+    .then( function(response) {
+       return response.json();
+    })
+    .then( function(data) {
+      this.setState( { assets: data } );
+      this.setState({ Application status: 'loaded' });
+    }.bind(this))
+/*
+    .catch( function() {
+      console.log('Something is broken');
+      this.setState({ Application status: 'error' });
+    }.bind(this))
+*/
+    ;
+  };
+
+  render() {
+
+    if ( this.state.application_status == 'error' ) {
+        return (
+        <div className="QRSTLGeneratorApp">
+          <div className="status error">ERROR</div>
+        </div>
+        );
+    } else if ( this.state.application_status == 'initializing' ) {
+        return (
+        <div className="QRSTLGeneratorApp">
+          <div className="status initializing">INITIALIZING</div>
+        </div>
+        );
+    } else if ( this.state.application_status == 'loading' ) {
+        return (
+        <div className="QRSTLGeneratorApp">
+          <div className="status loading">LOADING</div>
+        </div>
+        );
+    } else if ( this.state.application_status == 'loaded' ) {
+      var model_list = this.state.assets['model_list']
+      var tag_list = this.state.assets['tag_list'];
+      return (
+        <div className="QRSTLGeneratorApp">
+          <form action="/api/qr" method="GET" className="qr_generation_form">
+          <div className="container">
+            <div className="row">
+              <div className="col-sm-1"><h2>1.</h2></div>
+              <div className="col-sm-10">
+                  <div className="row">
+                    <h3>Select the 3D object to generate.</h3>
+                  </div>
+                  <div className="row">
+                    <TagSelector tag_list={tag_list} available_model_list={model_list} />
+                  </div>
+              </div>
+            </div>
+            <div className="row">&nbsp;</div>
+            <div className="row">
+              <div className="col-sm-1"><h2>2.</h2></div>
+              <div className="col-sm-10">
+                  <div className="row">
+                    <h3>Create your QR code.</h3>
+                  </div>
+                  <div className="row">
+                    <QRCreator />
+                  </div>
+              </div>
+            </div>
+            <div className="row">&nbsp;</div>
+            <div className="row">
+              <div className="col-sm-1"><h2>3.</h2></div>
+              <div className="col-sm-10">
+                  <div className="row">
+                    <h3>Download your 3D object (.STL) file to print.</h3>
+                  </div>
+                  <div className="row">
+                    <input type="submit" name="submit" value="Download" />
+                  </div>
+              </div>
+            </div>
+            <div className="row">&nbsp;</div>
+          </div>
+          </form>
+        </div>
+      );
+    } else {
+        console.log("unknown application_status in render: " + this.state.application_status)
+        return null
+    }
+  };
+}
+
+ReactDOM.render(
+    <QRSTLGeneratorApp />,
+    document.getElementById('root')
+);
+
+</script>
+
+
+
+<body>
+
+<div class="container">
+  <div id="header">
+    <h1>3D Printable QR Code Generator</h1>
+    <p>
+        This application will let you create customized 3D printable QR codes in a variety
+        of styles, such as keychains, refrigerator magnets, or coasters just as easily as
+        most other online qr code generators.  The difference?  It doesn't just generate a
+        graphical image, but a 3D printable model (.STL file) that you can print on any 3D
+        printer (as long as the bed is large enough for the object you are creating)
+    </p>
+    <div class=""></div>
+  </div>
+  <div id="root"></div>
+  <div id="footer">
+    <h4>Happy printing!</h4>
+      <p>
+          I hope you enjoy using this free service.  If you feel so inclined, you can
+          would appreciate a <a href="https://www.paypal.me/DannyRego/5usd" target="_qrstl_donate">small donation</a> to
+          help me pay for the required hosting to keep this running, and completely free.
+      </p>
+      <p>
+          Most of the source code for this website can be found on my <a href="https://github.com/danny6869/qrstl" target="_qrstl_github">github</a> if you are
+          interested in seeing how it works.  Of course, pull requests are welcome if
+          you want to help create some useful models and/or features.
+      </p>
+      <p>
+          If you have any questions or comments, feel free to shoot me an <a href="mailto:danny+qrstl@regoroad.com">email</a>.
+      </p>
+  </div>
+</div>
+
+
+
+</body>
+
+
