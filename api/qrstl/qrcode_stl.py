@@ -178,7 +178,7 @@ class QRCodeSTL(qrcode.image.base.BaseImage):
 if __name__ == '__main__':
 
     # Main execution...
-    qr_data = 'http://www.qrstl.com'
+    qr_data = 'http://qrstl.com'
 
     print("Generating samples for all known models to \"{}\"...".format(settings.SAMPLE_STL_FILE_DIRECTORY))
 
