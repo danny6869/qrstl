@@ -269,12 +269,12 @@ class QRSTLItem extends React.Component {
                     <input type="hidden" name="name" value={item.name} />
                   : null
                   }
-                  {item.description}
+                  {item.display_name}
                 </label>
             </div>
           </div>
           <div className="row">
-            <div className="col-sm-2">
+            <div className="col-sm-2 thumbnail">
               {
                 ( item.sample_stl_uri ) ? (
                   <a href={item.sample_stl_uri}><img src={item.sample_image_uri} alt="(image)" className="img-rounded" /></a>
@@ -286,7 +286,7 @@ class QRSTLItem extends React.Component {
             <div className="col-sm-10">
               <div className="row">
                 <div className="col-sm-12">
-                  (description)
+                  {item.description}
                 </div>
               </div>
               <div className="row">
@@ -306,7 +306,6 @@ class QRSTLItem extends React.Component {
                       null
                     )
                   }
-                  For dual color, change the filament at {item.change_filament_height}mm
                 </div>
               </div>
               <div className="row">
@@ -343,6 +342,13 @@ class TagSelector extends React.Component {
     super(props);
 
     var filterRes = this.getFilteredModelList(['nfc'],'and')
+    if (filterRes.filtered_model_list.length == 0) {
+        filterRes = {
+            wanted_tag_list: [],
+            wanted_tag_list_operator: 'or',
+            filtered_model_list: this.props.available_model_list,
+        }
+    }
 
     this.state = {
         wanted_tag_list_operator: filterRes.wanted_tag_list_operator,
@@ -558,12 +564,12 @@ class QRSTLGeneratorApp extends React.Component {
     })
     .then( function(data) {
       this.setState( { assets: data } );
-      this.setState({ Application status: 'loaded' });
+      this.setState({ application_status: 'loaded' });
     }.bind(this))
 /*
     .catch( function() {
       console.log('Something is broken');
-      this.setState({ Application status: 'error' });
+      this.setState({ application_status: 'error' });
     }.bind(this))
 */
     ;
