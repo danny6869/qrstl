@@ -180,14 +180,22 @@ if __name__ == '__main__':
     # Main execution...
     qr_data = 'http://www.qrstl.com'
 
-    print("Generating samples for all known models to \"{}\"...".format(settings.SAMPLE_FILE_DIRECTORY))
+    print("Generating samples for all known models to \"{}\"...".format(settings.SAMPLE_STL_FILE_DIRECTORY))
 
     try:
-        os.makedirs(settings.SAMPLE_FILE_DIRECTORY)
+        os.makedirs(settings.SAMPLE_STL_FILE_DIRECTORY)
+        os.makedirs(settings.SAMPLE_PNG_FILE_DIRECTORY)
     except FileExistsError as ex:
         pass
 
     for x in BackgroundModel.all():
+
+        # Generate and save the .STL model...
         print("Generating sample QR for \"{}\"...".format(x.name))
         qr_stl = QRCodeSTL.make_stl(x.name, qr_data)
-        qr_stl.save('{}\\{}.stl'.format(settings.SAMPLE_FILE_DIRECTORY,x.name))
+        qr_stl.save('{}\\{}.stl'.format(settings.SAMPLE_STL_FILE_DIRECTORY,x.name))
+
+        # Just output a warning if there is no .PNG image for the UI to show...
+        png_filename = os.path.join(settings.SAMPLE_PNG_FILE_DIRECTORY,"{}.png".format(x.name))
+        if not os.path.isfile(png_filename):
+            print("WARNING: {} does not exist!!!".format(png_filename))
