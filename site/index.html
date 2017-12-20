@@ -9,6 +9,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
 
+<!-- Google maps -->
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAGOT-Vjra_lWtoJaxAQxa97LjV1Frn0pU">
+</script>
+
 <script type="text/babel">
 
 class QRInputBase extends React.Component {
@@ -54,6 +59,7 @@ class QRInputBase extends React.Component {
 
   renderHiddenQRDataField() {
     // This MUST be included in the output of our child components.  It is where the final QR data goes to be sent on with the form's submit.
+    console.log("QR Data: " + this.state.qr_data)
     return (
       <div>
         <input type="hidden" ref="data" name="data" value={this.state.qr_data} />
@@ -62,6 +68,144 @@ class QRInputBase extends React.Component {
   }
 };
 
+class QRInputEmail extends QRInputBase {
+  compileQRData(form_items) {
+    return "mailto:" + form_items['email_address'];
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <input type="text" ref="email_address" name="email_address" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['email_address']} size="60"/>
+      </div>
+    );
+  }
+};
+class QRInputPhoneNumber extends QRInputBase {
+  compileQRData(form_items) {
+    return "tel:" + form_items['phone_number'];
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <input type="text" ref="phone_number" name="phone_number" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['phone_number']} size="60"/>
+      </div>
+    );
+  }
+};
+class QRInputSMS extends QRInputBase {
+  compileQRData(form_items) {
+    var qr_data = "tel:" + form_items['phone_number'];
+    if ( form_items['subject'] != '' ) {
+      qr_data = qr_data + ":" + form_items['subject'];
+    }
+    return qr_data;
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <div className="row">
+          <div className="col-sm-2">
+            Phone Number:
+          </div>
+          <div className="col-sm-10">
+            <input type="text" ref="phone_number" name="phone_number" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['phone_number']} size="60"/>
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-sm-2">
+            Subject:
+          </div>
+          <div className="col-sm-10">
+            <input type="text" ref="subject" name="subject" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['subject']} size="60"/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+class QRInputYoutube extends QRInputBase {
+  compileQRData(form_items) {
+    return "youtube://" + form_items['video_id'];
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <div className="row">
+          <div className="col-sm-2">
+            Video ID:
+          </div>
+          <div className="col-sm-10">
+            <input type="text" ref="video_id" name="video_id" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['video_id']} size="60"/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+class QRInputGPS extends QRInputBase {
+  compileQRData(form_items) {
+    return "geo:" + form_items['longitude'] + ":" + form_items['latitude'];
+  }
+
+  inputChangeInterception(event) {
+    this.inputChanged(event);
+    // TODO: Find a better way to do this...
+    if ( this.mapComponent ) {
+        this.mapComponent.placeMarkerNoOnChange(this.state.form_items['latitude'],this.state.form_items['longitude'],true);
+    }
+  }
+
+  updateCoordinates(latitude,longitude) {
+    // Google map coordinates have changed, so we need to
+    // update this component to reflect that...
+    this.longitudeInput.value = longitude;
+    this.latitudeInput.value = latitude;
+
+    // Cheat, and fire off a change event...so we act as-if the text
+    // was actually changes (which it was), so the QR data gets
+    // generated underneath...
+    var event = new Event('input', { bubbles: true});
+    this.latitudeInput.dispatchEvent(event);
+    this.longitudeInput.dispatchEvent(event);
+  }
+
+  render() {
+
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <div className="row">
+          <div className="col-sm-2">
+            Latitude:
+          </div>
+          <div className="col-sm-10">
+            <input type="text" ref={(input) => { this.latitudeInput = input; }} name="latitude" onChange={this.inputChangeInterception.bind(this)} defaultValue={this.props.default_values['latitude']} size="16"/>
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-sm-2">
+            Longitude:
+          </div>
+          <div className="col-sm-10">
+            <input type="text" ref={(input) => { this.longitudeInput = input; }} name="longitude" onChange={this.inputChangeInterception.bind(this)} defaultValue={this.props.default_values['longitude']} size="16"/>
+          </div>
+        </div>
+        <div className="row">&nbsp;</div>
+        <div className="row">
+          <div className="col-sm-2">
+          </div>
+          <div className="col-sm-10">
+              <GPSMap onChange={this.updateCoordinates.bind(this)} latitude={this.state.form_items['latitude']} longitude={this.state.form_items['longitude']} ref={(mapItem) => { this.mapComponent = mapItem; }}/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
 class QRInputURL extends QRInputBase {
   compileQRData(form_items) {
     return form_items['url'];
@@ -71,6 +215,19 @@ class QRInputURL extends QRInputBase {
       <div className="qr_input">
         { this.renderHiddenQRDataField() }
         <input type="text" ref="url" name="url" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['url']} size="60"/>
+      </div>
+    );
+  }
+};
+class QRInputGooglePlayApp extends QRInputBase {
+  compileQRData(form_items) {
+    return "{{{market://details?id="+form_items['google_play_app_id']+"}}}";
+  }
+  render() {
+    return (
+      <div className="qr_input">
+        { this.renderHiddenQRDataField() }
+        <input type="text" ref="google_play_app_id" name="google_play_app_id" onChange={this.inputChanged.bind(this)} defaultValue={this.props.default_values['google_play_app_id']} size="60"/>
       </div>
     );
   }
@@ -144,13 +301,20 @@ class QRInputWIFI extends QRInputBase {
 
 class QRCreator extends React.Component {
 
+  // Barcode data reference...
+  // https://github.com/zxing/zxing/wiki/Barcode-Contents
+  // Missing MMS and VCARD (pain in the ass)
   static defaultProps = {
+// XXX - Should this just be an array in the order we want?
     qr_types: {
-      text: {
-        display_name: 'Text',
-        object_class: QRInputText,
+      wifi: {
+        display_name: 'WiFi',
+        object_class: QRInputWIFI,
         default_values: {
-          "text": "(text)"
+          "wifi_name": "My WiFi",
+          "wifi_ssid": "My Network SSID",
+          "wifi_password": "(password)",
+          "wifi_encryption_type": "WPA2"
         },
       },
       url: {
@@ -160,14 +324,55 @@ class QRCreator extends React.Component {
           "url": "http://qrstl.com"
         },
       },
-      wifi: {
-        display_name: 'WiFi',
-        object_class: QRInputWIFI,
+      text: {
+        display_name: 'Text',
+        object_class: QRInputText,
         default_values: {
-          "wifi_name": "My WiFi",
-          "wifi_ssid": "My Network SSID",
-          "wifi_password": "(password)",
-          "wifi_encryption_type": "WPA2"
+          "text": "(text)"
+        },
+      },
+      gps: {
+        display_name: 'GPS',
+        object_class: QRInputGPS,
+        default_values: {
+          "latitude": "43.64346684907469",
+          "longitude": "-79.3791389465332",
+        },
+      },
+      email: {
+        display_name: 'Email Address',
+        object_class: QRInputEmail,
+        default_values: {
+          "email_address": "you@somewhere.com"
+        },
+      },
+      phone: {
+        display_name: 'Phone Number',
+        object_class: QRInputPhoneNumber,
+        default_values: {
+          "phone_number": "+1.555.555.5555"
+        },
+      },
+      sms: {
+        display_name: 'SMS',
+        object_class: QRInputSMS,
+        default_values: {
+          "phone_number": "+1.555.555.5555",
+          "subject": "",
+        },
+      },
+      youtube: {
+        display_name: 'Youtube',
+        object_class: QRInputYoutube,
+        default_values: {
+          "video_id": "6vTxt_XBr8U",
+        },
+      },
+      google_app: {
+        display_name: 'Google Play App',
+        object_class: QRInputGooglePlayApp,
+        default_values: {
+          "google_play_app_id": "org.example.foo"
         },
       },
     }
@@ -204,7 +409,7 @@ class QRCreator extends React.Component {
             qr_type_keys.map( function (qr_type) {
               return(
                 <li className={ this.state.current_selection == qr_type ? 'active' : null }>
-                <a href="#" onClick={this.selectQRType.bind(this,qr_type)}>{ this.props.qr_types[qr_type]['display_name'] }</a>
+                <a href="#qrinput" onClick={this.selectQRType.bind(this,qr_type)}>{ this.props.qr_types[qr_type]['display_name'] }</a>
                 </li>
               );
             }.bind(this) )
@@ -212,12 +417,151 @@ class QRCreator extends React.Component {
         </ul>
         <div className="row">&nbsp;</div>
         <div>
+          <a name="#qrinput"/>
           { input_object_instance }
         </div>
       </div>
     );
   }
 }
+
+class GPSMap extends React.Component {
+
+  static defaultProps = {
+    initialZoom: 10,
+  }
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      latitude: props.latitude,
+      longitude: props.longitude,
+      mapContainer: null,
+      mapObj: null,
+      markerObj: null,
+    };
+  }
+
+  addYourLocationButton (map) {
+    var controlDiv = document.createElement('div');
+
+    var firstChild = document.createElement('button');
+    firstChild.style.backgroundColor = '#fff';
+    firstChild.style.border = 'none';
+    firstChild.style.outline = 'none';
+    firstChild.style.width = '28px';
+    firstChild.style.height = '28px';
+    firstChild.style.borderRadius = '2px';
+    firstChild.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
+    firstChild.style.cursor = 'pointer';
+    firstChild.style.marginRight = '10px';
+    firstChild.style.padding = '0';
+    firstChild.title = 'Your Location';
+    controlDiv.appendChild(firstChild);
+
+    var secondChild = document.createElement('div');
+    secondChild.style.margin = '5px';
+    secondChild.style.width = '18px';
+    secondChild.style.height = '18px';
+    secondChild.style.backgroundImage = 'url(https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-2x.png)';
+    secondChild.style.backgroundSize = '180px 18px';
+    secondChild.style.backgroundPosition = '0 0';
+    secondChild.style.backgroundRepeat = 'no-repeat';
+    firstChild.appendChild(secondChild);
+
+    firstChild.addEventListener('click', this.getGPSCoordinates.bind(this));
+
+    controlDiv.index = 1;
+    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(controlDiv);
+  }
+
+  componentDidMount() {
+    var mapOptions = {
+      center: new google.maps.LatLng(this.state.latitude, this.state.longitude),
+      zoom: this.props.initialZoom,
+      draggableCursor:'crosshair',
+    };
+
+    var map = new google.maps.Map(this.mapContainer, mapOptions);
+
+    // Set a callback for when the map is clicked, so we can update the co-ordinates...
+    google.maps.event.addListener(map, 'click', function(event) {
+      this.placeMarker(event.latLng.lat(),event.latLng.lng(),false);
+    }.bind(this));
+
+    // Custom button for getting current position...
+    this.addYourLocationButton(map);
+
+    this.placeMarkerOnMap(map,this.state.latitude,this.state.longitude,true);
+
+    // Update our state...
+    this.setState({
+        mapObj: map,
+    });
+  }
+
+  placeMarkerOnMapNoOnChange(map_obj,latitude,longitude,setCenter) {
+
+    var coord = new google.maps.LatLng(latitude, longitude);
+
+    // Get rid of the existing marker if any...
+    if ( this.state.markerObj ) {
+        this.state.markerObj.setMap(null);
+    }
+
+    var marker = new google.maps.Marker({position: coord, title: 'QR Code Co-ordinates', map: map_obj});
+
+    if ( setCenter ) {
+      map_obj.setCenter(coord,this.props.initialZoom);
+    }
+
+    this.setState({
+        markerObj: marker,
+        latitude: latitude,
+        longitude: longitude,
+    });
+  }
+
+  placeMarkerOnMap(map_obj,latitude,longitude,setCenter) {
+    this.placeMarkerOnMapNoOnChange(map_obj,latitude,longitude,setCenter);
+
+    // Take onChange into account here somewhere
+    if ( this.props.onChange ) {
+      this.props.onChange(latitude,longitude);
+    }
+  }
+
+  placeMarkerNoOnChange(latitude,longitude,setCenter) {
+    this.placeMarkerOnMapNoOnChange(this.state.mapObj,latitude,longitude,setCenter);
+  }
+
+  placeMarker(latitude,longitude,setCenter) {
+    this.placeMarkerOnMap(this.state.mapObj,latitude,longitude,setCenter);
+  }
+
+  fillGPSCoordinates(position) {
+    this.placeMarker(position.coords.latitude, position.coords.longitude,true);
+  }
+
+  getGPSCoordinates(event) {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(this.fillGPSCoordinates.bind(this));
+    } else {
+      // None...why even show the button?!
+      console.log("Geolocation not available in this browser.");
+    }
+    event.preventDefault();
+  }
+
+  render() {
+    return (
+      <div>
+        <div className='mapHolder' style={{height:'400px',width:'400px'}} ref={(mapContainer) => { this.mapContainer = mapContainer; }} />
+      </div>
+    );
+  }
+
+};
 
 
 
@@ -233,7 +577,9 @@ class TagItem extends React.Component {
       // Render a selectable item
       return (
         <label key={"tag_selector_" + this.props.tag_name}>
-          <a href="#" className={ this.props.highlight ? "label label-primary" : "label label-default" } onClick={this.props.onToggle.bind(this,this.props.tag_name)}>{ this.props.tag_name }</a>
+          <a href="#" className={ this.props.highlight ? "label label-primary" : "label label-default" } onClick={this.props.onToggle.bind(this,this.props.tag_name)}>
+            <span className={ this.props.highlight ? "glyphicon glyphicon-check" : "glyphicon glyphicon-unchecked" } />&nbsp;{ this.props.tag_name }
+          </a>
           &nbsp;
         </label>
       );
@@ -677,7 +1023,7 @@ ReactDOM.render(
     <h4>Happy printing!</h4>
       <p>
           I hope you enjoy using this free service.  If you feel so inclined, you can
-          would appreciate a <a href="https://www.paypal.me/DannyRego/5usd" target="_qrstl_donate">small donation</a> to
+          make a <a href="https://www.paypal.me/DannyRego/5usd" target="_qrstl_donate">small donation</a> to
           help me pay for the required hosting to keep this running, and completely free.
       </p>
       <p>
