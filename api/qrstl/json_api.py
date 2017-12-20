@@ -9,8 +9,13 @@ import os
 import uuid
 import urllib.parse
 
+import logging
+log = logging.getLogger(__name__)
+
 from flask import Flask, jsonify, send_file, request
 app = Flask(__name__)
+
+_APP_ASSETS_CACHE = None
 
 class NotFoundException(Exception):
     pass
@@ -63,36 +68,56 @@ def main_api():
 
 @app.route("/api/assets")
 def assets():
-    model_list = []
-    tag_list = []
+    global _APP_ASSETS_CACHE
 
-    for model_obj in BackgroundModel.all():
-        model_info = {
-            'name': model_obj.name,
-            'display_name': model_obj.display_name,
-            'description': model_obj.description,
-            'tags': model_obj.tags,
-            'notes': model_obj.notes,
-            'change_filament_height': model_obj.change_filament_height,
-            'create_uri': '/api/qr?name={}&data='.format(urllib.parse.quote_plus(model_obj.name)),
-            'sample_stl_uri': '/api/sample/qr?name={}&data={}'.format(urllib.parse.quote_plus(model_obj.name),urllib.parse.quote_plus('http://qrstl.com')),
-            'sample_image_uri': '/api/sample/image?name={}'.format(urllib.parse.quote_plus(model_obj.name)),
+    if _APP_ASSETS_CACHE is None:
+        # Build the assets...
+        log.debug("Building asset cache")
+        model_list = []
+        tag_list = []
+
+        for model_obj in BackgroundModel.all():
+            model_info = {
+                'name': model_obj.name,
+                'display_name': model_obj.display_name,
+                'description': model_obj.description,
+                'tags': model_obj.tags,
+                'notes': model_obj.notes,
+                'change_filament_height': model_obj.change_filament_height,
+                'video_url': model_obj.video_url,
+                'create_uri': '/api/qr?name={}&data='.format(urllib.parse.quote_plus(model_obj.name)),
+                'sample_stl_uri': '/api/sample/qr?name={}&data={}'.format(urllib.parse.quote_plus(model_obj.name),urllib.parse.quote_plus('http://qrstl.com')),
+                'sample_image_uri': '/api/sample/image?name={}'.format(urllib.parse.quote_plus(model_obj.name)),
+            }
+
+            # Add some notes automatically if needed...
+            if model_obj.change_filament_height:
+                model_info['notes'] = model_info['notes'] + [
+                    "For dual-color support, set your slicing software to stop for a filament change at the height of {}mm".format(model_obj.change_filament_height)
+                ]
+            # TODO: Make this happen properly in the UI from the actual video_url above
+            if model_obj.video_url:
+                model_info['notes'] = model_info['notes'] + [
+                    "Timelapse video: {}".format(model_obj.video_url)
+                ]
+
+            # Add this model to our list...
+            model_list.append(model_info)
+
+            # Keep a list of all possible tags to communicate out...
+            tag_list = tag_list + model_obj.tags
+
+        tag_list = list(set(tag_list))
+        tag_list.sort()
+
+        _APP_ASSETS_CACHE = {
+            'model_list' : model_list,
+            'tag_list'   : tag_list,
         }
+    else:
+        log.debug("Using cached assets: {}".format(_APP_ASSETS_CACHE))
 
-        # Add some notes automatically if needed...
-        if model_obj.change_filament_height:
-            model_info['notes'] = model_info['notes'] + [
-                "For dual-color support, set your slicing software to stop for a filament change at the height of {}mm".format(model_obj.change_filament_height)
-            ]
-
-        # Add this model to our list...
-        model_list.append(model_info)
-
-        # Keep a list of all possible tags to communicate out...
-        tag_list = tag_list + model_obj.tags
-
-    tag_list = list(set(tag_list))
-    return jsonify( model_list = model_list, tag_list = tag_list )
+    return jsonify( **_APP_ASSETS_CACHE )
 
 @app.route("/api/sample/image")
 def sample_image():
