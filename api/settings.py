@@ -25,6 +25,8 @@ BACKGROUND_FILE_ATTRIBUTES = {
         'no_draw_y': 0,
         # Height at which the instructions should show to change filament
         'change_filament_height': 0,
+        # Youtube video of timelapse
+        'video_url': None,
         # Any notes to display for this model...
         'notes': [],
     },
@@ -55,12 +57,47 @@ BACKGROUND_FILE_ATTRIBUTES = {
         'no_draw_x': 4,
         'no_draw_y': 4,
         'change_filament_height': 3.1,
+        'video_url': 'https://youtu.be/uQjJb_PdHbY',
         'notes': [
-            'This model is designed to accept a 3cm diameter (1mm thick) nfc tag.'
-            'Set your slicer to stop at the height of 1.82mm so you can insert the nfc tag.'
+            'This model is designed to accept a 3cm diameter (1mm thick) nfc tag.',
+            'Set your slicer to stop at the height of 1.82mm so you can insert the nfc tag.',
         ],
     },
-    # TODO: From here down have not quite been vetted yet... still working on them.  Move above as they become "official".
+    '50mm_magnet_with_nfc': {
+        'display_name': '5cm magnet with embedded nfc',
+        'description': 'A basic 5cm x 5cm keychain with an embedded nfc tag.',
+        'tags': ['magnet','nfc'],
+        'qr_size_x': 38,
+        'qr_size_y': 38,
+        'qr_size_z': 0.7,
+        'offset_z': 4.3,
+        'no_draw_position': 'center',
+        'no_draw_x': 6,
+        'no_draw_y': 6,
+        'change_filament_height': 4.6,
+        'video_url': 'https://youtu.be/6vTxt_XBr8U',
+        'notes': [
+            'This model is designed to accept a 3cm diameter (1mm thick) nfc tag, and a 10mm diameter (2mm thick) magnet.',
+            'Set your slicer to stop at the height of 2.0mm so you can insert the nfc tag.',
+            'The magnet should be able to easily be inserted once the print is complete.',
+        ],
+    },
+    '50mm_magnet_no_nfc': {
+        'display_name': '5cm magnet with embedded nfc',
+        'description': 'A basic 5cm x 5cm keychain with an embedded nfc tag.',
+        'tags': ['magnet'],
+        'qr_size_x': 38,
+        'qr_size_y': 38,
+        'qr_size_z': 0.7,
+        'offset_z': 4.3,
+        'change_filament_height': 4.6,
+        'video_url': None,
+        'notes': [
+            'This model is designed to accept a 10mm diameter (2mm thick) magnet.',
+            'The magnet should be able to easily be inserted once the print is complete.',
+        ],
+    },
+    # # TODO: From here down have not quite been vetted yet... still working on them.  Move above as they become "official".
     # '35mm_keychain_with_nfc': {
     #     'display_name': '',
     #     'description': '3.5cm keychain (nfc snap-together)',
@@ -73,7 +110,7 @@ BACKGROUND_FILE_ATTRIBUTES = {
     #     'no_draw_y': 4,
     #     'change_filament_height': 2.6,
     # },
-    # # XXX - Not really finalized from here down
+    #  # XXX - Not really finalized from here down
     # '5cm_coaster_no_nfc': {
     #     'display_name': '',
     #     'description': '5cm QR coaster (no NFC)',
