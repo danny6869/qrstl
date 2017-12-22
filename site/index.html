@@ -34,15 +34,19 @@ class QRInputBase extends React.Component {
     }
   }
 
+  updateFormItem(form_item_name,form_item_value) {
+    var form_items = this.state.form_items;
+    form_items[form_item_name] = form_item_value;
+    this.setState({ form_items: form_items });
+    var qr_data = this.compileQRData(form_items);
+    this.updateQRData(qr_data);
+  }
+
   inputChanged(event) {
     // This method should gather all info from it's mini form and then call this.updateQRData() with that info.
     // Needs to be overridden in the child classes
     if ( ( event.target.name != null ) && ( event.target.name != '' ) ) {
-        var form_items = this.state.form_items;
-        form_items[event.target.name] = event.target.value;
-        this.setState({ form_items: form_items });
-        var qr_data = this.compileQRData(form_items);
-        this.updateQRData(qr_data);
+        this.updateFormItem(event.target.name,event.target.value);
     } else {
         console.log("WARNING: Missing name attribute on input component.")
     }
@@ -165,12 +169,11 @@ class QRInputGPS extends QRInputBase {
     this.longitudeInput.value = longitude;
     this.latitudeInput.value = latitude;
 
-    // Cheat, and fire off a change event...so we act as-if the text
-    // was actually changes (which it was), so the QR data gets
-    // generated underneath...
-    var event = new Event('input', { bubbles: true});
-    this.latitudeInput.dispatchEvent(event);
-    this.longitudeInput.dispatchEvent(event);
+    // We already have things marked on the map, and we've set the input
+    // boxes to the new co-ordinates.  Make sure we account for them in
+    // the form_items...
+    this.updateFormItem('latitude',latitude);
+    this.updateFormItem('longitude',longitude);
   }
 
   render() {
